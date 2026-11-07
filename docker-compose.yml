@@ -1,0 +1,138 @@
+version: '3.9'
+
+networks:
+  vstudio-net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vstudio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vstudio_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-vstudio_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - vstudio-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vstudio -d vstudio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vstudio-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - vstudio-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ai-captions:
+    build:
+      context: ./apps/ai-captions-service
+      dockerfile: Dockerfile
+    container_name: vstudio-ai-captions
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - COMPUTE_TYPE=${COMPUTE_TYPE:-int8}
+      - PORT=8001
+    volumes:
+      - whisper_cache:/root/.cache/huggingface
+    networks:
+      - vstudio-net
+
+  render-worker:
+    build:
+      context: ./apps/render-service
+      dockerfile: Dockerfile
+    container_name: vstudio-render-worker
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-vstudio-renders}
+      - CDN_PUBLIC_URL=${CDN_PUBLIC_URL:-http://localhost:3000/exports}
+      - RENDER_OUTPUT_DIR=/app/exports
+    volumes:
+      - exports_data:/app/exports
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - vstudio-net
+
+  gpu-render-worker:
+    build:
+      context: ./apps/render-service
+      dockerfile: Dockerfile.gpu
+    container_name: vstudio-gpu-render-worker
+    profiles:
+      - gpu
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video, graphics]
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-vstudio-renders}
+      - CDN_PUBLIC_URL=${CDN_PUBLIC_URL:-http://localhost:3000/exports}
+      - RENDER_OUTPUT_DIR=/app/exports
+    volumes:
+      - exports_data:/app/exports
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - vstudio-net
+
+  web-editor:
+    build:
+      context: ./apps/web-editor
+      dockerfile: Dockerfile
+    container_name: vstudio-web-editor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-vstudio}:${POSTGRES_PASSWORD:-vstudio_secret_password}@postgres:5432/${POSTGRES_DB:-vstudio_db}
+      - REDIS_URL=redis://redis:6379
+      - AI_CAPTIONS_SERVICE_URL=http://ai-captions:8001
+      - NEXT_PUBLIC_AI_CAPTIONS_URL=http://localhost:8001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vstudio-net
+
+volumes:
+  pgdata:
+  redisdata:
+  whisper_cache:
+  exports_data:
+

@@ -1,0 +1,33 @@
+{
+  "name": "vstudio-master",
+  "version": "1.0.0",
+  "private": true,
+  "description": "V-Studio Pro - Hybrid WebGL Video Editor + AI Auto-Captions + GPU Render Worker + Social Auto-Publisher",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:editor": "npm run dev --workspace=@vstudio/web-editor",
+    "build:editor": "npm run build --workspace=@vstudio/web-editor",
+    "dev:render": "npm run dev --workspace=@vstudio/render-service",
+    "build:render": "npm run build --workspace=@vstudio/render-service",
+    "build": "npm run build --workspaces --if-present",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "keywords": [
+    "video-editor",
+    "webgl",
+    "pixijs",
+    "faster-whisper",
+    "auto-captions",
+    "bullmq",
+    "nextjs",
+    "ffmpeg",
+    "social-publisher"
+  ],
+  "author": "V-Studio Team",
+  "license": "MIT"
+}
+

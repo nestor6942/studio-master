@@ -1,0 +1,35 @@
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gnupg \
+    ffmpeg \
+    chromium-browser \
+    libegl1 \
+    libgl1-mesa-dri \
+    libgbm1 \
+    libasound2 \
+    fonts-montserrat \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps || npm install
+
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+RUN npm run build
+
+CMD ["node", "dist/index.js"]
+
