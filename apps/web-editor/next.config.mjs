@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   transpilePackages: ['pixi.js'],
+  serverExternalPackages: ['bullmq', 'ioredis'],
   async headers() {
     return [
       {
@@ -20,4 +21,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-

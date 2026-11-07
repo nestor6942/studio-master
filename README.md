@@ -9,6 +9,7 @@
 ![Faster-Whisper](https://img.shields.io/badge/AI-Faster--Whisper-purple)
 ![BullMQ](https://img.shields.io/badge/Queue-BullMQ%20%2B%20Redis-red)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
+![Netlify](https://img.shields.io/badge/Netlify-Configured-00C7B7)
 
 ---
 
@@ -45,6 +46,22 @@
 
 ---
 
+## 🌐 Despliegue en Netlify (Paso a Paso)
+
+El proyecto está 100% preconfigurado con archivos `netlify.toml` listos para monorepo y compatibilidad total con **Next.js 15**:
+
+1. Inicia sesión en tu cuenta de [Netlify](https://app.netlify.com/).
+2. Haz clic en **"Add new site"** ➔ **"Import an existing project"**.
+3. Selecciona **GitHub** y autoriza tu repositorio **`nestor6942/studio-master`**.
+4. Netlify detectará automáticamente la configuración gracias a `netlify.toml`:
+   - **Base directory**: `apps/web-editor`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `.next`
+   - **Node.js Version**: `20`
+5. Haz clic en **"Deploy Site"**. ¡Netlify compilará y publicará tu editor web automáticamente con HTTPS gratuito!
+
+---
+
 ## 🏗️ Estructura del Monorepo
 
 ```
@@ -65,8 +82,9 @@ studio-master/
 │   │   ├── modules/
 │   │   │   ├── captions/DynamicCaptionRenderer.ts
 │   │   │   └── social/SocialPublisherService.ts
-│   │   └── store/
-│   │       └── useEditorStore.ts
+│   │   ├── store/
+│   │   │   └── useEditorStore.ts
+│   │   └── netlify.toml         # Configuración Netlify para la app
 │   │
 │   ├── ai-captions-service/     # Microservicio Python faster-whisper
 │   │   ├── main.py
@@ -86,8 +104,10 @@ studio-master/
 │
 ├── .env.example                 # Variables de entorno modelo
 ├── .gitignore
+├── .nvmrc                       # Node 20 para Netlify/Vercel
 ├── docker-compose.yml           # Orquestación multicontenedor completa
-├── package.json                 # Configuración de workspaces npm
+├── netlify.toml                 # Configuración Netlify raíz
+├── package.json                 # Workspaces de npm
 └── vstudio-master-install.sh    # Script instalador automatizado
 ```
 
@@ -118,19 +138,6 @@ npm run dev:editor
 ```
 Abre tu navegador en: [http://localhost:3000](http://localhost:3000)
 
-### 5. Iniciar el Microservicio de Subtítulos IA (Opcional para IA en vivo)
-```bash
-cd apps/ai-captions-service
-python -m venv venv
-# En Linux/Mac:
-source venv/bin/activate
-# En Windows:
-.\venv\Scripts\activate
-
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
-```
-
 ---
 
 ## 🐳 Despliegue con Docker Compose
@@ -145,28 +152,7 @@ docker compose up -d
 docker compose --profile gpu up -d
 ```
 
-### Servicios Disponibles:
-| Servicio | URL / Puerto | Descripción |
-|---|---|---|
-| **Web Editor** | `http://localhost:3000` | Interfaz de edición y timeline WebGL |
-| **AI Captions** | `http://localhost:8001` | API Faster-Whisper para transcripción |
-| **PostgreSQL** | `localhost:5432` | Base de datos relacional |
-| **Redis** | `localhost:6379` | Broker de colas BullMQ |
-
----
-
-## 🎯 Correcciones y Mejoras Implementadas
-
-En la revisión técnica del instalador original (`vstudio-master-install.sh.txt`), se detectaron y resolvieron los siguientes fallos críticos:
-1. **Render Service Incompleto**: El instalador creaba un `package.json` y referenciaba `dist/workers/renderExport.worker.js`, pero no contenía ningún código fuente. Se implementó el worker completo con BullMQ, FFmpeg y exportación con subtítulos ASS.
-2. **Falta de Web Editor en Docker**: `docker-compose.yml` omitía el contenedor del editor web; se integró con healthchecks y redes compartidas.
-3. **Carencia de Reproducción Real de Video**: El motor WebGL únicamente dibujaba un fondo decorativo; se actualizó para cargar y sincronizar archivos de video/audio reales (`HTMLVideoElement` con canvas WebGL).
-4. **Exportación en el Navegador**: Se añadió soporte con `MediaRecorder` para exportar a 60 FPS directamente en el cliente sin requerir GPU en servidores externos.
-5. **Herramientas de Edición**: Se implementaron las funciones vacías de corte (`splitClipAtPlayhead`) y borrado (`deleteSelectedClip`) en el store Zustand.
-6. **Integración UI para Subtítulos IA**: Se añadió el flujo completo para solicitar transcripciones al servicio Python o usar el fallback inteligente.
-
 ---
 
 ## 📄 Licencia
 Este proyecto está bajo la Licencia MIT.
-

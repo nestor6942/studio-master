@@ -11,7 +11,7 @@
     "build:editor": "npm run build --workspace=@vstudio/web-editor",
     "dev:render": "npm run dev --workspace=@vstudio/render-service",
     "build:render": "npm run build --workspace=@vstudio/render-service",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=@vstudio/web-editor",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
@@ -30,4 +30,3 @@
   "author": "V-Studio Team",
   "license": "MIT"
 }
-
