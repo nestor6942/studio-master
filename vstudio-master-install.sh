@@ -22,3 +22,4 @@ mkdir -p apps/render-service/src/services
 
 echo "✅ Directorios creados correctamente."
 echo "Instalación completada. Ejecuta 'npm install' en la raíz y luego 'npm run dev:editor' para arrancar."
+
